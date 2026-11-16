@@ -1,0 +1,142 @@
+{
+  "version": "2.2.0",
+  "summary": {
+    "title": "Online Money Transfer App - Vulnerable Architecture",
+    "owner": "Group 2 (Muhaned, Azhar, Osama)",
+    "description": "Insecure architecture lacking trust boundaries, encryption, strong auth, and audit logs.",
+    "id": 0
+  },
+  "detail": {
+    "contributors": [
+      { "name": "Muhaned Mohamed AL sinani" },
+      { "name": "Azhar Hamed AL salti" },
+      { "name": "Osama AL hadi" }
+    ],
+    "diagrams": [
+      {
+        "id": 0,
+        "title": "Vulnerable Transfer DFD",
+        "diagramType": "STRIDE",
+        "version": "2.2.0",
+        "cells": [
+          {
+            "position": { "x": 80, "y": 200 },
+            "size": { "width": 160, "height": 80 },
+            "shape": "actor",
+            "id": "actor-customer",
+            "data": {
+              "type": "tm.Actor",
+              "name": "Customer",
+              "description": "External user initiating money transfers",
+              "outOfScope": false,
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "id": "t-1",
+                  "title": "Identity Spoofing (No MFA/Token Validation)",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Spoofing",
+                  "description": "Attacker can impersonate a legitimate customer due to weak session/password authentication.",
+                  "mitigation": "Pending"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 380, "y": 200 },
+            "size": { "width": 160, "height": 80 },
+            "shape": "process",
+            "id": "proc-webapp",
+            "data": {
+              "type": "tm.Process",
+              "name": "Transfer Web App",
+              "description": "Processes money transfer requests without input sanitization or logging",
+              "outOfScope": false,
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "id": "t-2",
+                  "title": "Repudiation of Transfer Transactions",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Repudiation",
+                  "description": "No audit trail exists; users or attackers can deny performing a transfer.",
+                  "mitigation": "Pending"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 680, "y": 200 },
+            "size": { "width": 160, "height": 80 },
+            "shape": "store",
+            "id": "store-db",
+            "data": {
+              "type": "tm.Store",
+              "name": "Accounts Database",
+              "description": "Stores customer balances in plaintext",
+              "outOfScope": false,
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "id": "t-3",
+                  "title": "Unauthorized Data Tampering",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "Lack of access controls and integrity checks allows direct balance modification.",
+                  "mitigation": "Pending"
+                }
+              ]
+            }
+          },
+          {
+            "shape": "flow",
+            "id": "flow-http",
+            "source": { "cell": "actor-customer" },
+            "target": { "cell": "proc-webapp" },
+            "labels": ["HTTP Transfer Request (Plaintext)"],
+            "data": {
+              "type": "tm.Flow",
+              "name": "HTTP Transfer Request (Plaintext)",
+              "protocol": "HTTP",
+              "isEncrypted": false,
+              "isPublicNetwork": true,
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "id": "t-4",
+                  "title": "Credential & Data Sniffing (MitM)",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Information Disclosure",
+                  "description": "Data transmitted over unencrypted HTTP can be intercepted on public networks.",
+                  "mitigation": "Pending"
+                }
+              ]
+            }
+          },
+          {
+            "shape": "flow",
+            "id": "flow-db",
+            "source": { "cell": "proc-webapp" },
+            "target": { "cell": "store-db" },
+            "labels": ["Unauthenticated DB Query"],
+            "data": {
+              "type": "tm.Flow",
+              "name": "Unauthenticated DB Query",
+              "protocol": "TCP",
+              "isEncrypted": false,
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          }
+        ]
+      }
+    ],
+    "diagramTop": 1,
+    "reviewer": "CYSE303 Instructor",
+    "threatTop": 4
+  }
+}
