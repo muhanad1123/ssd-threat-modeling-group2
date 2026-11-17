@@ -1,7 +1,7 @@
 # CYSE303 - Secure Software Development Project
 ## Threat Modeling: STRIDE, DFDs, and Attack Surface Analysis
 
-### Group 1 Members
+### Group 2 Members
 * **Muhaned Mohamed AL sinani** – ID: `[2316223]`
 * **Azhar Hamed AL salti** – ID: `[2420345]`
 * **Osama AL hadi** – ID: `[2317565]`
