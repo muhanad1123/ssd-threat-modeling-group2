@@ -17,3 +17,9 @@ This project demonstrates Threat Modeling using Data Flow Diagrams (DFDs), STRID
 1. Open [https://www.threatdragon.com/](https://www.threatdragon.com/) -> Launch Threat Dragon -> Local Session -> Open Existing Model.
 2. Load `vulnerable-code/vulnerable-architecture.json` to inspect unmitigated STRIDE threats.
 3. Load `fixed-code/fixed-architecture.json` to verify all threats are mitigated.
+
+### STRIDE Threats & Mitigations Summary
+* **Spoofing:** Mitigated via Multi-Factor Authentication (MFA) and signed JWT tokens.
+* **Tampering:** Mitigated via Role-Based Access Control (RBAC) and AES-256 encryption.
+* **Repudiation:** Mitigated via immutable, append-only audit logs.
+* **Information Disclosure:** Mitigated via HTTPS (TLS 1.3) across all trust boundaries.
