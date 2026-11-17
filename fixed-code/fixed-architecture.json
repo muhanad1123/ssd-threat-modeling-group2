@@ -187,4 +187,25 @@
             }
           },
           {
-            "shape
+            "shape": "flow",
+            "id": "flow-log",
+            "source": { "cell": "proc-webapp" },
+            "target": { "cell": "store-logs" },
+            "labels": ["Write Signed Audit Log"],
+            "data": {
+              "type": "tm.Flow",
+              "name": "Write Signed Audit Log",
+              "protocol": "TLS",
+              "isEncrypted": true,
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          }
+        ]
+      }
+    ],
+    "diagramTop": 1,
+    "reviewer": "CYSE303 Instructor - Verified by Group 2",
+    "threatTop": 4
+  }
+}
