@@ -1,0 +1,190 @@
+{
+  "version": "2.2.0",
+  "summary": {
+    "title": "Online Money Transfer App - Fixed Secure Architecture",
+    "owner": "Group 2 (Muhaned, Azhar, Osama)",
+    "description": "Hardened architecture enforcing Trust Boundaries, TLS 1.3, IAM/MFA, and Immutable Audit Logs.",
+    "id": 1
+  },
+  "detail": {
+    "contributors": [
+      { "name": "Muhaned Mohamed AL sinani" },
+      { "name": "Azhar Hamed AL salti" },
+      { "name": "Osama AL hadi" }
+    ],
+    "diagrams": [
+      {
+        "id": 0,
+        "title": "Mitigated Transfer DFD",
+        "diagramType": "STRIDE",
+        "version": "2.2.0",
+        "cells": [
+          {
+            "position": { "x": 320, "y": 60 },
+            "size": { "width": 580, "height": 420 },
+            "shape": "trust-boundary-box",
+            "id": "tb-internal",
+            "data": {
+              "type": "tm.BoundaryBox",
+              "name": "Internal Trusted Network Boundary",
+              "description": "Strict perimeter separating external internet traffic from internal banking services"
+            }
+          },
+          {
+            "position": { "x": 60, "y": 220 },
+            "size": { "width": 160, "height": 80 },
+            "shape": "actor",
+            "id": "actor-customer",
+            "data": {
+              "type": "tm.Actor",
+              "name": "Authenticated Customer",
+              "description": "External user verified via MFA & JWT",
+              "outOfScope": false,
+              "hasOpenThreats": false,
+              "threats": [
+                {
+                  "id": "t-1",
+                  "title": "Identity Spoofing (No MFA/Token Validation)",
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "type": "Spoofing",
+                  "description": "Attacker attempts to impersonate a legitimate customer.",
+                  "mitigation": "Enforced Multi-Factor Authentication (MFA) and short-lived signed JWT tokens via IAM Service."
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 380, "y": 100 },
+            "size": { "width": 160, "height": 80 },
+            "shape": "process",
+            "id": "proc-iam",
+            "data": {
+              "type": "tm.Process",
+              "name": "IAM / Auth Service",
+              "description": "Validates MFA and issues JWT tokens",
+              "outOfScope": false,
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          },
+          {
+            "position": { "x": 380, "y": 240 },
+            "size": { "width": 160, "height": 80 },
+            "shape": "process",
+            "id": "proc-webapp",
+            "data": {
+              "type": "tm.Process",
+              "name": "Hardened Transfer API",
+              "description": "Validates JWT, sanitizes inputs, and logs all transactions",
+              "outOfScope": false,
+              "hasOpenThreats": false,
+              "threats": [
+                {
+                  "id": "t-2",
+                  "title": "Repudiation of Transfer Transactions",
+                  "status": "Mitigated",
+                  "severity": "Medium",
+                  "type": "Repudiation",
+                  "description": "Users denying transfer actions.",
+                  "mitigation": "Implemented append-only Audit Log Store recording user ID, timestamp, IP, and transaction hash."
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 680, "y": 160 },
+            "size": { "width": 160, "height": 80 },
+            "shape": "store",
+            "id": "store-db",
+            "data": {
+              "type": "tm.Store",
+              "name": "Encrypted Accounts DB",
+              "description": "AES-256 encrypted database with RBAC",
+              "outOfScope": false,
+              "hasOpenThreats": false,
+              "threats": [
+                {
+                  "id": "t-3",
+                  "title": "Unauthorized Data Tampering",
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "Direct unauthorized modification of account balances.",
+                  "mitigation": "Applied Role-Based Access Control (RBAC), least-privilege DB credentials, and AES-256 encryption at rest."
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 680, "y": 320 },
+            "size": { "width": 160, "height": 80 },
+            "shape": "store",
+            "id": "store-logs",
+            "data": {
+              "type": "tm.Store",
+              "name": "Immutable Audit Logs",
+              "description": "Write-once security event store",
+              "outOfScope": false,
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          },
+          {
+            "shape": "flow",
+            "id": "flow-https",
+            "source": { "cell": "actor-customer" },
+            "target": { "cell": "proc-webapp" },
+            "labels": ["HTTPS (TLS 1.3) + JWT"],
+            "data": {
+              "type": "tm.Flow",
+              "name": "HTTPS (TLS 1.3) + JWT",
+              "protocol": "HTTPS",
+              "isEncrypted": true,
+              "isPublicNetwork": true,
+              "hasOpenThreats": false,
+              "threats": [
+                {
+                  "id": "t-4",
+                  "title": "Credential & Data Sniffing (MitM)",
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "type": "Information Disclosure",
+                  "description": "Interception of traffic over public networks.",
+                  "mitigation": "Enforced HTTPS with TLS 1.3 and HSTS across all external trust boundaries."
+                }
+              ]
+            }
+          },
+          {
+            "shape": "flow",
+            "id": "flow-auth",
+            "source": { "cell": "proc-webapp" },
+            "target": { "cell": "proc-iam" },
+            "labels": ["Verify Token (mTLS)"],
+            "data": {
+              "type": "tm.Flow",
+              "name": "Verify Token (mTLS)",
+              "protocol": "HTTPS",
+              "isEncrypted": true,
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          },
+          {
+            "shape": "flow",
+            "id": "flow-db-sec",
+            "source": { "cell": "proc-webapp" },
+            "target": { "cell": "store-db" },
+            "labels": ["TLS Encrypted SQL (RBAC)"],
+            "data": {
+              "type": "tm.Flow",
+              "name": "TLS Encrypted SQL (RBAC)",
+              "protocol": "TLS",
+              "isEncrypted": true,
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          },
+          {
+            "shape
