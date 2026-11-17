@@ -23,3 +23,7 @@ This project demonstrates Threat Modeling using Data Flow Diagrams (DFDs), STRID
 * **Tampering:** Mitigated via Role-Based Access Control (RBAC) and AES-256 encryption.
 * **Repudiation:** Mitigated via immutable, append-only audit logs.
 * **Information Disclosure:** Mitigated via HTTPS (TLS 1.3) across all trust boundaries.
+
+### Attack Surface Reduction
+* **Before:** Exposed unencrypted HTTP endpoints, direct unauthenticated DB queries, and lack of network segmentation.
+* **After:** Enforced internal trust boundaries, TLS 1.3 encryption, IAM/MFA token verification, and least-privilege DB access.
