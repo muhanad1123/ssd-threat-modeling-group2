@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYSE303 - STRIDE Threat Modeling Live Demo (Group 2)</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.25);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.25);
+            --accent: #38bdf8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); padding: 20px; line-height: 1.6; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card-bg); padding: 18px 25px; border-radius: 12px;
+            border: 1px solid #334155; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+        .title-box h1 { font-size: 1.4rem; color: var(--accent); }
+        .title-box p { font-size: 0.85rem; color: var(--text-muted); }
+
+        .controls { display: flex; gap: 12px; }
+        button {
+            padding: 10px 18px; border: none; border-radius: 8px; font-weight: 600;
+            cursor: pointer; transition: all 0.25s ease; font-size: 0.9rem;
+        }
+        .btn-vuln { background: var(--danger); color: white; box-shadow: 0 0 15px var(--danger-glow); }
+        .btn-vuln:hover { background: #dc2626; transform: translateY(-2px); }
+        .btn-sec { background: var(--success); color: white; box-shadow: 0 0 15px var(--success-glow); }
+        .btn-sec:hover { background: #059669; transform: translateY(-2px); }
+        .btn-sim { background: var(--accent); color: #0f172a; }
+        .btn-sim:hover { background: #0284c7; color: white; }
+
+        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--card-bg); border-radius: 12px; padding: 20px;
+            border: 1px solid #334155;
+        }
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid #334155;
+        }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .badge-vuln { background: var(--danger-glow); color: var(--danger); border: 1px solid var(--danger); }
+        .badge-sec { background: var(--success-glow); color: var(--success); border: 1px solid var(--success); }
+
+        /* Architecture Diagram Canvas */
+        .dfd-stage {
+            position: relative; min-height: 360px; background: #0b1120;
+            border-radius: 10px; padding: 25px; display: flex;
+            align-items: center; justify-content: space-between; gap: 15px;
+            overflow: hidden;
+        }
+        .trust-boundary {
+            position: absolute; top: 15px; bottom: 15px; left: 32%; right: 15px;
+            border: 2px dashed var(--success); border-radius: 12px;
+            background: rgba(16, 185, 129, 0.04); pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .trust-label {
+            position: absolute; top: -11px; left: 15px; background: #0b1120;
+            padding: 0 8px; font-size: 0.75rem; color: var(--success); font-weight: bold;
+        }
+
+        .node {
+            z-index: 2; background: #1e293b; border: 2px solid #475569;
+            padding: 15px; border-radius: 10px; text-align: center; width: 170px;
+            transition: all 0.3s ease;
+        }
+        .node.process { border-radius: 50%; width: 155px; height: 155px; display: flex; flex-direction: column; justify-content: center; }
+        .node.datastore { border-radius: 4px; border-left: none; border-right: none; border-top: 3px solid #64748b; border-bottom: 3px solid #64748b; }
+        .node h4 { font-size: 0.9rem; margin-bottom: 5px; }
+        .node span { font-size: 0.72rem; color: var(--text-muted); display: block; }
+
+        .flow-line {
+            z-index: 2; flex-grow: 1; text-align: center; position: relative;
+        }
+        .flow-tag {
+            display: inline-block; padding: 4px 10px; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 600; margin-bottom: 6px;
+        }
+        .arrow { height: 3px; width: 100%; background: #64748b; position: relative; }
+        .arrow::after {
+            content: '▶'; position: absolute; right: -5px; top: -9px; font-size: 12px; color: inherit;
+        }
+
+        .col-stack { display: flex; flex-direction: column; gap: 20px; z-index: 2; }
+
+        /* STRIDE Table */
+        .stride-list { display: flex; flex-direction: column; gap: 10px; }
+        .stride-item {
+            background: #0f172a; padding: 12px; border-radius: 8px;
+            border-left: 4px solid var(--danger); transition: all 0.3s ease;
+        }
+        .stride-item.mitigated { border-left-color: var(--success); }
+        .stride-top { display: flex; justify-content: space-between; font-weight: bold; font-size: 0.88rem; }
+        .stride-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* Live Terminal Log */
+        .terminal {
+            margin-top: 20px; background: #020617; border: 1px solid #334155;
+            border-radius: 8px; padding: 15px; font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem; min-height: 110px;
+        }
+        .log-vuln { color: #f87171; }
+        .log-sec { color: #34d399; }
+        .log-info { color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="title-box">
+        <h1>OWASP Threat Dragon — Interactive Architecture Demo</h1>
+        <p>CYSE303 Group 2: Muhaned AL sinani, Azhar AL salti, Osama AL hadi</p>
+    </div>
+    <div class="controls">
+        <button class="btn-vuln" onclick="setMode('vulnerable')">1. Vulnerable Architecture</button>
+        <button class="btn-sec" onclick="setMode('mitigated')">2. Mitigated Architecture</button>
+        <button class="btn-sim" onclick="runTransferSimulation()">▶ Simulate $5,000 Transfer</button>
+    </div>
+</header>
+
+<div class="grid">
+    <!-- Left: DFD Visualization -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3 id="dfd-title">Data Flow Diagram: Vulnerable Transfer DFD</h3>
+            <span id="status-badge" class="badge badge-vuln">HIGH RISK — UNPROTECTED</span>
+        </div>
+
+        <div class="dfd-stage">
+            <div id="boundary" class="trust-boundary" style="opacity: 0;">
+                <span class="trust-label">Internal Trusted Network Boundary (Zero-Trust)</span>
+            </div>
+
+            <!-- External Entity -->
+            <div class="node" id="node-user">
+                <h4 id="user-title">Unauthenticated User</h4>
+                <span id="user-sub">No MFA / Weak Session</span>
+            </div>
+
+            <!-- Flow 1 -->
+            <div class="flow-line">
+                <div id="flow1-tag" class="flow-tag badge-vuln">HTTP (Plaintext)</div>
+                <div id="flow1-arrow" class="arrow" style="background: var(--danger); color: var(--danger);"></div>
+            </div>
+
+            <!-- Process -->
+            <div class="node process" id="node-api">
+                <h4 id="api-title">Transfer API</h4>
+                <span id="api-sub">No Input Validation</span>
+            </div>
+
+            <!-- Flow 2 -->
+            <div class="flow-line">
+                <div id="flow2-tag" class="flow-tag badge-vuln">Unauthenticated SQL</div>
+                <div id="flow2-arrow" class="arrow" style="background: var(--danger); color: var(--danger);"></div>
+            </div>
+
+            <!-- Data Stores -->
+            <div class="col-stack">
+                <div class="node datastore" id="node-db">
+                    <h4 id="db-title">Accounts DB</h4>
+                    <span id="db-sub">Plaintext Storage</span>
+                </div>
+                <div class="node datastore" id="node-log" style="opacity: 0.35;">
+                    <h4 id="log-title">No Audit Logs</h4>
+                    <span id="log-sub">Repudiation Risk</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="terminal" id="terminal-output">
+            <div class="log-info">[SYSTEM READY] Select an architecture mode above and click "Simulate $5,000 Transfer" to test security controls.</div>
+        </div>
+    </div>
+
+    <!-- Right: STRIDE Matrix -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>STRIDE Threat Matrix</h3>
+            <span id="stride-count" style="font-size: 0.85rem; color: var(--danger); font-weight: bold;">6 Open Threats</span>
+        </div>
+        <div class="stride-list" id="stride-container"></div>
+    </div>
+</div>
+
+<script>
+    let currentMode = 'vulnerable';
+
+    const strideData = [
+        { letter: 'S - Spoofing', vuln: 'Open: Attackers forge session IDs without MFA.', sec: 'Mitigated: Enforced MFA + Signed JWT tokens.' },
+        { letter: 'T - Tampering', vuln: 'Open: Transfer amount modified via HTTP MITM.', sec: 'Mitigated: TLS 1.3 encryption + HMAC integrity.' },
+        { letter: 'R - Repudiation', vuln: 'Open: No logs to prove who initiated transfer.', sec: 'Mitigated: Immutable append-only signed audit logs.' },
+        { letter: 'I - Info Disclosure', vuln: 'Open: Account balances leaked in plaintext.', sec: 'Mitigated: TLS 1.3 in transit & AES-256 at rest.' },
+        { letter: 'D - Denial of Service', vuln: 'Open: API flooded with unlimited requests.', sec: 'Mitigated: API Gateway rate-limiting & WAF.' },
+        { letter: 'E - Elevation of Privilege', vuln: 'Open: Direct DB access allows admin override.', sec: 'Mitigated: Least-privilege RBAC & mTLS boundary.' }
+    ];
+
+    function renderStride() {
+        const container = document.getElementById('stride-container');
+        container.innerHTML = '';
+        strideData.forEach(item => {
+            const isSec = currentMode === 'mitigated';
+            container.innerHTML += `
+                <div class="stride-item ${isSec ? 'mitigated' : ''}">
+                    <div class="stride-top">
+                        <span>${item.letter}</span>
+                        <span style="color: ${isSec ? 'var(--success)' : 'var(--danger)'}">
+                            ${isSec ? '✅ MITIGATED' : '⚠️ OPEN'}
+                        </span>
+                    </div>
+                    <div class="stride-desc">${isSec ? item.sec : item.vuln}</div>
+                </div>
+            `;
+        });
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        const isSec = mode === 'mitigated';
+
+        document.getElementById('dfd-title').innerText = isSec
+            ? 'Data Flow Diagram: Mitigated Transfer DFD'
+            : 'Data Flow Diagram: Vulnerable Transfer DFD';
+
+        const badge = document.getElementById('status-badge');
+        badge.innerText = isSec ? 'HARDENED — ALL THREATS MITIGATED' : 'HIGH RISK — UNPROTECTED';
+        badge.className = isSec ? 'badge badge-sec' : 'badge badge-vuln';
+
+        document.getElementById('boundary').style.opacity = isSec ? '1' : '0';
+
+        document.getElementById('user-title').innerText = isSec ? 'Authenticated Customer' : 'Unauthenticated User';
+        document.getElementById('user-sub').innerText = isSec ? 'Verified via MFA & JWT' : 'No MFA / Weak Session';
+        document.getElementById('node-user').style.borderColor = isSec ? 'var(--success)' : 'var(--danger)';
+
+        const f1Tag = document.getElementById('flow1-tag');
+        f1Tag.innerText = isSec ? 'HTTPS (TLS 1.3) + JWT' : 'HTTP (Plaintext)';
+        f1Tag.className = isSec ? 'flow-tag badge-sec' : 'flow-tag badge-vuln';
+        document.getElementById('flow1-arrow').style.background = isSec ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('flow1-arrow').style.color = isSec ? 'var(--success)' : 'var(--danger)';
+
+        document.getElementById('api-title').innerText = isSec ? 'Hardened Transfer API' : 'Transfer API';
+        document.getElementById('api-sub').innerText = isSec ? 'Rate-Limited + mTLS' : 'No Input Validation';
+        document.getElementById('node-api').style.borderColor = isSec ? 'var(--success)' : 'var(--danger)';
+
+        const f2Tag = document.getElementById('flow2-tag');
+        f2Tag.innerText = isSec ? 'TLS Encrypted SQL (RBAC)' : 'Unauthenticated SQL';
+        f2Tag.className = isSec ? 'flow-tag badge-sec' : 'flow-tag badge-vuln';
+        document.getElementById('flow2-arrow').style.background = isSec ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('flow2-arrow').style.color = isSec ? 'var(--success)' : 'var(--danger)';
+
+        document.getElementById('db-title').innerText = isSec ? 'Encrypted Accounts DB' : 'Accounts DB';
+        document.getElementById('db-sub').innerText = isSec ? 'AES-256 + Least Privilege' : 'Plaintext Storage';
+
+        const logNode = document.getElementById('node-log');
+        logNode.style.opacity = isSec ? '1' : '0.35';
+        document.getElementById('log-title').innerText = isSec ? 'Immutable Audit Logs' : 'No Audit Logs';
+        document.getElementById('log-sub').innerText = isSec ? 'SHA-256 Signed Trail' : 'Repudiation Risk';
+
+        const strideCount = document.getElementById('stride-count');
+        strideCount.innerText = isSec ? '0 Open Threats (6 Mitigated)' : '6 Open Threats';
+        strideCount.style.color = isSec ? 'var(--success)' : 'var(--danger)';
+
+        document.getElementById('terminal-output').innerHTML = `<div class="log-info">[MODE SWITCHED] Loaded ${mode.toUpperCase()} architecture configuration. Click "Simulate $5,000 Transfer" to test.</div>`;
+        renderStride();
+    }
+
+    function runTransferSimulation() {
+        const term = document.getElementById('terminal-output');
+        if (currentMode === 'vulnerable') {
+            term.innerHTML = `
+                <div class="log-info">> Initiating POST /api/transfer { amount: 5000, to: "ACC-9921" } over HTTP...</div>
+                <div class="log-vuln">> [ALERT - SPOOFING & TAMPERING] Attacker intercepted plaintext packet! Modified destination to "ATTACKER-01" and amount to $50,000!</div>
+                <div class="log-vuln">> [ALERT - INFO DISCLOSURE] Database returned unencrypted balance & PII. No audit log recorded!</div>
+            `;
+        } else {
+            term.innerHTML = `
+                <div class="log-info">> Initiating POST /api/transfer over TLS 1.3 with MFA-verified JWT...</div>
+                <div class="log-sec">> [VERIFIED] JWT signature & mTLS internal boundary validated. MITM tampering blocked!</div>
+                <div class="log-sec">> [SUCCESS] $5,000 transferred via RBAC-restricted encrypted SQL. Signed entry written to Immutable Audit Log.</div>
+            `;
+        }
+    }
+
+    setMode('vulnerable');
+</script>
+</body>
+</html>
